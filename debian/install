@@ -1,0 +1,7 @@
+./adpictl /usr/sbin/
+./export_gpio.sh /usr/lib/adpi-utils/
+./parse_parameters.sh /usr/lib/adpi-utils/
+./parse_sections.sh /usr/lib/adpi-utils/
+./99-adpi-gpio.rules /lib/udev/rules.d/
+./99-adpi-iio.rules /lib/udev/rules.d/
+./adpi.conf /etc/
