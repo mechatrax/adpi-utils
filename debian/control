@@ -1,0 +1,15 @@
+Source: adpi-utils
+Section: misc
+Priority: optional
+Maintainer: Masahiro Honda <honda@mechatrax.com>
+Build-Depends: debhelper (>= 10)
+Standards-Version: 3.9.8
+Homepage: https://mechatrax.com/
+Vcs-Git: https://github.com/mechatrax/adpi-utils.git
+Vcs-browser: https://github.com/mechatrax/adpi-utils
+
+Package: adpi-utils
+Architecture: all
+Depends: ${misc:Depends}, bc, adpi-firmware, raspberrypi-kernel-mtx
+Description: Utilities for ADPi
+ This package contains command utilities to control ADPi.

@@ -1,0 +1,11 @@
+Package: adpi-utils
+Version: 1.0.0
+Architecture: all
+Maintainer: Masahiro Honda <honda@mechatrax.com>
+Installed-Size: 30
+Depends: bc, adpi-firmware, raspberrypi-kernel-mtx
+Section: misc
+Priority: optional
+Homepage: https://mechatrax.com/
+Description: Utilities for ADPi
+ This package contains command utilities to control ADPi.

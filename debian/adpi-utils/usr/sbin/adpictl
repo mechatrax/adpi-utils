@@ -1,0 +1,412 @@
+#!/bin/bash
+
+DEFAULT_SPI_DEV=spi0.0
+DEFAULT_CONFIG_FILE=/etc/adpi.conf
+DEFAULT_LIB_PATH=/usr/lib/adpi-utils/
+
+VERSION="1.0"
+
+GET_USAGE="get {frequency|gain|output <N>|scale|voltage <N>}"
+
+SET_USAGE="set {frequency|gain|output <N>|scale} <VALUE>"
+
+USAGE="
+Usage: adpictl [OPTION] COMMAND ...
+
+Commands:
+    ${GET_USAGE}
+    ${SET_USAGE}
+    help                        display help and exit
+    version                     display version and exit
+    
+Options:
+    --config, -c <FILE>         read config from FILE
+    --spi, -s <DEVICE_NUMBER>   specify device number by spi
+    --iio, -i <DEVICE_NUMBER>   specify device number by iio
+"
+
+#
+# Usage: list_freq
+#
+list_freq ()
+{
+  cat ${IIO_DEV}/sampling_frequency_available
+}
+
+#
+# Usage: list_scale
+#
+list_scale ()
+{
+  cat ${IIO_DEV}/in_voltage-voltage_scale_available
+}
+
+#
+# Usage: set_calib SCALE_INDEX
+#
+set_calib ()
+{
+  if [ -z "$EEPROM_DEV" ]
+  then
+    return 0
+  fi
+
+  local i
+  local data_size=$((4*$CHANNELS))
+  local calib_bias=($(od -v -An -td4 -j$((2*${data_size}*${1})) -N$data_size ${EEPROM_DEV}/eeprom))
+  local calib_scale=($(od -v -An -td4 -j$((2*${data_size}*${1}+${data_size})) -N$data_size ${EEPROM_DEV}/eeprom))
+ 
+  for i in $(seq 0 $(($CHANNELS - 1)));
+  do
+    echo ${calib_bias[$i]} > ${IIO_DEV}/in_voltage${i}-voltage${i}_calibbias
+    echo ${calib_scale[$i]} > ${IIO_DEV}/in_voltage${i}-voltage${i}_calibscale
+  done
+}
+
+#
+# Usage: set_gpio <N> { 0 | 1 }
+#
+set_gpio ()
+{
+  if [ "$1" = "" ] || [ "$2" = "" ]
+  then
+    return 2
+  fi
+  
+  if [ -z "$GPIO_DEV" ]
+  then 
+    echo "gpio is not set at $CONFIG_FILE"
+    return 1
+  fi
+  
+  local chip=$(find ${GPIO_DEV}/gpio/gpiochip*/ -maxdepth 0)
+  local base=$(cat ${chip}/base)
+  
+  echo $2 > ${chip}/subsystem/gpio$(($base + $1 + $INDEX_OFFSET))/value
+}
+
+#
+# Usage: set_freq FREQUENCY
+#
+set_freq ()
+{
+  if [ "$1" = "" ]
+  then
+    return 2
+  fi
+  
+  echo $1 > $FREQ_PATH
+  if [ $? -eq 0 ]
+  then
+    return 0
+  fi
+  
+  local freq_list=($(list_freq))
+  echo "available values: ${freq_list[@]}"
+  return 1
+}
+
+#
+# Usage: set_scale SCALE
+#
+set_scale ()
+{
+  if [ "$1" = "" ]
+  then
+    return 2
+  fi
+  
+  local i
+  local scale_list=($(list_scale))
+  local max=$((${#scale_list[@]} - 1))
+  
+  for i in $(seq 0 $max) 
+  do
+    if [ "$1" = "${scale_list[$i]}" ]
+    then
+      set_calib $i
+      echo ${scale_list[$i]} > $SCALE_PATH
+      return 0
+    fi
+  done
+  
+  echo "available values: ${scale_list[@]}"
+  return 1
+}
+
+#
+# Usage: set_gain GAIN
+#
+set_gain ()
+{
+  if [ "$1" = "" ]
+  then
+    return 2
+  fi
+  
+  local i
+  local gain_list=(1 2 4 8 16 32 64 128 256)
+  local scale_list=($(list_scale))
+  local max=$((${#scale_list[@]} - 1))
+ 
+  for i in $(seq 0 $max) 
+  do
+    if [ "$1" = "${gain_list[$i]}" ]
+    then
+      set_calib $i
+      echo ${scale_list[$i]} > $SCALE_PATH
+      return 0
+    fi
+  done
+  
+  echo "available values: ${gain_list[@]:0:$max}"
+  return 1
+}
+
+#
+# Usage: get_gpio <N>
+#
+get_gpio ()
+{
+  if [ "$1" = "" ]
+  then
+    return 2
+  fi
+  
+  if [ -z "$GPIO_DEV" ]
+  then 
+    echo "gpio is not set at $CONFIG_FILE"
+    return 1
+  fi
+  
+  local chip=$(find ${GPIO_DEV}/gpio/gpiochip*/ -maxdepth 0)
+  local base=$(cat ${chip}/base)
+  cat ${chip}/subsystem/gpio$(($base + $1 + $INDEX_OFFSET))/value
+}
+
+#
+# Usage: get_freq
+#
+get_freq ()
+{
+  cat $FREQ_PATH
+}
+
+#
+# Usage: get_scale
+#
+get_scale ()
+{
+  cat $SCALE_PATH
+}
+
+#
+# Usage: get_gain
+#
+get_gain ()
+{
+  local i
+  local gain=""
+  local gain_list=(1 2 4 8 16 32 64 128 256)
+  local scale=$(get_scale)
+  local scale_list=($(list_scale))
+  local max=$((${#scale_list[@]} - 1))
+  
+  for i in $(seq 0 $max) 
+  do
+    if [ "$scale" = "${scale_list[$i]}" ]
+    then
+      gain="${gain_list[$i]}"
+    fi
+  done
+  
+  echo "$gain"
+}
+
+#
+# Usage: get_voltage <N>
+#
+get_voltage ()
+{
+  if [ "$1" = "" ]
+  then
+    return 2
+  fi
+  
+  local idx=$(($1 + $INDEX_OFFSET))
+  local ofs=$(cat ${IIO_DEV}/in_voltage${idx}-voltage${idx}_offset)
+  local scl=$(cat ${IIO_DEV}/in_voltage-voltage_scale)
+  local raw=$(cat ${IIO_DEV}/in_voltage${idx}-voltage${idx}_raw)
+  
+  echo "($raw + $ofs) * $scl" | bc
+}
+
+#
+# Usage: adpi_get { frequency | gain | output <N> | scale | voltage <N> }
+#
+adpi_get ()
+{
+  if [ "$IIO_DEV" = "" ]
+  then
+    echo "cannot access device"
+    return 1
+  fi
+
+  case $1 in
+    frequency)
+      get_freq
+      ;;
+    gain)
+      get_gain
+      ;;
+    output)
+      get_gpio $2
+      ;;
+    scale)
+      get_scale
+      ;;
+    voltage)
+      get_voltage $2
+      ;;
+    *)
+      echo "Get command usage:"
+      echo "    $GET_USAGE"
+      return 2
+      ;;
+  esac
+  
+  status=$?
+  
+  if [ "$status" = "2" ]
+  then
+    echo "Get command usage:"
+    echo "    $GET_USAGE"
+    return 2
+  fi
+}
+
+#
+# Usage: adpi_set { frequency | gain | output <N> | scale } <VALUE>
+#
+adpi_set ()
+{
+  if [ "$IIO_DEV" = "" ]
+  then
+    echo "cannot access device"
+    return 0
+  fi
+
+  case $1 in frequency)
+    set_freq $2
+    ;;
+  gain)
+    set_gain $2
+    ;;
+  output)
+    set_gpio $2 $3
+    ;;
+  scale)
+    set_scale $2
+    ;;
+  *)
+    echo "Set command usage:"
+    echo "    $SET_USAGE"
+    return 2
+    ;;
+  esac
+  
+  status=$?
+  
+  if [ "$status" = "2" ]
+  then
+    echo "Set command usage:"
+    echo "    $SET_USAGE"
+    return 2
+  fi
+}
+
+ARGS=($@)
+
+CONFIG_FILE=$DEFAULT_CONFIG_FILE
+SPI_DEV=$DEFAULT_SPI_DEV
+IIO_PATH="/sys/bus/spi/devices/${DEFAULT_SPI_DEV}/iio:device*"
+INDEX_OFFSET=-1
+
+#
+# parse options
+#
+for i in $(seq 0 $((${#ARGS[@]} - 1)))
+do
+  case ${ARGS[$i]} in
+    -c|--config)
+      CONFIG_FILE=${ARGS[$(($i + 1))]}
+      ;;
+    -s|--spi)
+      SPI_DEV=spi0.${ARGS[$(($i + 1))]}
+      IIO_PATH=/sys/bus/spi/devices/${SPI_DEV}/iio:device*
+      ;;
+    -i|--iio)
+      IIO_DEV=iio:device${ARGS[$(($i + 1))]}
+      IIO_PATH=/sys/bus/iio/devices/${IIO_DEV}
+      SPI_DEV=$(find /sys/bus/spi/devices/spi*/ -name "$IIO_DEV" | \
+                awk -F / '{ for (i=1;i<=NF;i++) { \
+                  if (match($i,"spi[0-9]*\.[0-9]*")) \
+                    print $i }}')
+      ;;
+    *)
+      ;;
+  esac
+done
+
+#
+# parse config
+#
+for param in $(${DEFAULT_LIB_PATH}/parse_parameters.sh $SPI_DEV $CONFIG_FILE)
+do
+  eval config_${param}
+done
+
+if [ -n "$config_gpio" ]
+then
+  GPIO_DEV=/sys/bus/i2c/devices/1-00$(echo $config_gpio | sed -e 's/^0x//')
+fi
+if [ -n "$config_eeprom" ]
+then
+  EEPROM_DEV=/sys/bus/i2c/devices/1-00$(echo $config_eeprom | sed -e 's/^0x//')
+fi
+CHANNELS=$config_channels
+
+IIO_DEV=$(find $IIO_PATH -maxdepth 0)
+FREQ_PATH=${IIO_DEV}/sampling_frequency
+SCALE_PATH=${IIO_DEV}/in_voltage-voltage_scale
+
+#
+# execute funcion
+#
+for i in $(seq 0 $((${#ARGS[@]} - 1)))
+do
+  case ${ARGS[$i]} in
+    get)
+      adpi_get ${ARGS[@]:$(($i + 1))}
+      exit $?
+      ;;
+    set)
+      adpi_set ${ARGS[@]:$(($i + 1))}
+      exit $?
+      ;;
+    help)
+      echo "$USAGE"
+      exit 0
+      ;;
+    version)
+      echo "adpictl version $VERSION"
+      exit 0
+      ;;
+    *)
+      ;;
+  esac
+done
+
+echo "$USAGE"
+exit 2
+

@@ -1,0 +1,1 @@
+ACTION=="add", SUBSYSTEM=="i2c", ATTRS{name}=="mcp23008", RUN+="/usr/lib/adpi-utils/export_gpio.sh %k"
