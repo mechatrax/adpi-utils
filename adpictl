@@ -4,7 +4,7 @@ DEFAULT_SPI_DEV=spi0.0
 DEFAULT_CONFIG_FILE=/etc/adpi.conf
 DEFAULT_LIB_PATH=/usr/lib/adpi-utils/
 
-VERSION="1.0"
+VERSION="1.1"
 
 GET_USAGE="get {frequency|gain|output <CH>|scale|voltage <CH>}"
 
@@ -51,20 +51,21 @@ set_calib ()
     return 0
   fi
 
-  local i
   local data_size=$((4*$CHANNELS))
-  local calib_bias=($(od -v -An -td4 -j$((2*${data_size}*${1})) -N$data_size ${EEPROM_DEV}/eeprom))
-  local calib_scale=($(od -v -An -td4 -j$((2*${data_size}*${1}+${data_size})) -N$data_size ${EEPROM_DEV}/eeprom))
+  local biases=($(od -v -An -td4 -j$((2*${data_size}*${1})) -N$data_size ${EEPROM_DEV}/eeprom))
+  local scales=($(od -v -An -td4 -j$((2*${data_size}*${1}+${data_size})) -N$data_size ${EEPROM_DEV}/eeprom))
  
-  for i in $(seq 0 $(($CHANNELS - 1)));
+  for ((i=0; i<$CHANNELS; i++))
   do
-    echo ${calib_bias[$i]} > ${IIO_DEV}/in_voltage${i}-voltage${i}_calibbias
-    echo ${calib_scale[$i]} > ${IIO_DEV}/in_voltage${i}-voltage${i}_calibscale
+    local bias=${biases[$i]}
+    local scale=${scales[$i]}
+    echo $bias > ${IIO_DEV}/in_voltage${i}-voltage${i}_calibbias
+    echo $scale > ${IIO_DEV}/in_voltage${i}-voltage${i}_calibscale
   done
 }
 
 #
-# Usage: set_gpio <N> { 0 | 1 }
+# Usage: set_gpio <N> { "on" | "off" }
 #
 set_gpio ()
 {
@@ -81,8 +82,22 @@ set_gpio ()
   
   local chip=$(find ${GPIO_DEV}/gpio/gpiochip*/ -maxdepth 0)
   local base=$(cat ${chip}/base)
+  local value
   
-  echo $2 > ${chip}/subsystem/gpio$(($base + $1 + $INDEX_OFFSET))/value
+  case $2 in
+  0|off)
+    value=0
+    ;;
+  1|on)
+    value=1
+    ;;
+  *)
+    echo "Invalid value $2"
+    return 1
+    ;;
+  esac
+  
+  echo $value > ${chip}/subsystem/gpio$(($base + $1 + $INDEX_OFFSET))/value
 }
 
 #
@@ -96,14 +111,6 @@ set_freq ()
   fi
   
   echo $1 > $FREQ_PATH
-  if [ $? -eq 0 ]
-  then
-    return 0
-  fi
-  
-  local freq_list=($(list_freq))
-  echo "available values: ${freq_list[@]}"
-  return 1
 }
 
 #
@@ -116,21 +123,21 @@ set_scale ()
     return 2
   fi
   
-  local i
-  local scale_list=($(list_scale))
-  local max=$((${#scale_list[@]} - 1))
+  local scales=($(list_scale))
   
-  for i in $(seq 0 $max) 
+  for ((i=0; i<${#scales[@]}; i++))
   do
-    if [ "$1" = "${scale_list[$i]}" ]
+    local scale=${scales[$i]}
+    if [ "$1" = "$scale" ]
     then
       set_calib $i
-      echo ${scale_list[$i]} > $SCALE_PATH
-      return 0
+      echo $scale > $SCALE_PATH
+      return $?
     fi
   done
   
-  echo "available values: ${scale_list[@]}"
+  echo "Invalid value $1"
+  
   return 1
 }
 
@@ -144,22 +151,23 @@ set_gain ()
     return 2
   fi
   
-  local i
-  local gain_list=(1 2 4 8 16 32 64 128 256)
-  local scale_list=($(list_scale))
-  local max=$((${#scale_list[@]} - 1))
+  local gains=(1 2 4 8 16 32 64 128 256)
+  local scales=($(list_scale))
  
-  for i in $(seq 0 $max) 
+  for ((i=0; i<${#scales[@]}; i++))
   do
-    if [ "$1" = "${gain_list[$i]}" ]
+    local scale=${scales[$i]}
+    local gain=${gains[$i]}
+    if [ "$1" = "$gain" ]
     then
       set_calib $i
-      echo ${scale_list[$i]} > $SCALE_PATH
-      return 0
+      echo $scale > $SCALE_PATH
+      return $?
     fi
   done
   
-  echo "available values: ${gain_list[@]:0:$max}"
+  echo "Invalid value $1"
+  
   return 1
 }
 
@@ -181,7 +189,18 @@ get_gpio ()
   
   local chip=$(find ${GPIO_DEV}/gpio/gpiochip*/ -maxdepth 0)
   local base=$(cat ${chip}/base)
-  cat ${chip}/subsystem/gpio$(($base + $1 + $INDEX_OFFSET))/value
+  local value=$(cat ${chip}/subsystem/gpio$(($base + $1 + $INDEX_OFFSET))/value)
+  
+  case $value in
+  0)
+    echo "off"
+    ;;
+  1)
+    echo "on"
+    ;;
+  *)
+    ;;
+  esac
 }
 
 #
@@ -205,22 +224,20 @@ get_scale ()
 #
 get_gain ()
 {
-  local i
   local gain=""
-  local gain_list=(1 2 4 8 16 32 64 128 256)
+  local gains=(1 2 4 8 16 32 64 128 256)
   local scale=$(get_scale)
-  local scale_list=($(list_scale))
-  local max=$((${#scale_list[@]} - 1))
+  local scales=($(list_scale))
   
-  for i in $(seq 0 $max) 
+  for ((i=0; i<${#scales[@]}; i++))
   do
-    if [ "$scale" = "${scale_list[$i]}" ]
+    if [ "$scale" = "${scales[$i]}" ]
     then
-      gain="${gain_list[$i]}"
+      gain=${gains[$i]}
     fi
   done
   
-  echo "$gain"
+  echo $gain
 }
 
 #
@@ -248,7 +265,7 @@ adpi_get ()
 {
   if [ "$IIO_DEV" = "" ]
   then
-    echo "cannot access device"
+    echo "Cannot access device"
     return 1
   fi
 
@@ -275,14 +292,15 @@ adpi_get ()
       ;;
   esac
   
-  status=$?
+  local status=$?
   
-  if [ "$status" = "2" ]
+  if [ $status -eq 2 ]
   then
     echo "Get command usage:"
     echo "    $GET_USAGE"
-    return 2
   fi
+  
+  return $status
 }
 
 #
@@ -292,37 +310,39 @@ adpi_set ()
 {
   if [ "$IIO_DEV" = "" ]
   then
-    echo "cannot access device"
+    echo "Cannot access device"
     return 0
   fi
 
-  case $1 in frequency)
-    set_freq $2
-    ;;
-  gain)
-    set_gain $2
-    ;;
-  output)
-    set_gpio $2 $3
-    ;;
-  scale)
-    set_scale $2
-    ;;
-  *)
-    echo "Set command usage:"
-    echo "    $SET_USAGE"
-    return 2
-    ;;
+  case $1 in
+    frequency)
+      set_freq $2
+      ;;
+    gain)
+      set_gain $2
+      ;;
+    output)
+      set_gpio $2 $3
+      ;;
+    scale)
+      set_scale $2
+      ;;
+    *)
+      echo "Set command usage:"
+      echo "    $SET_USAGE"
+      return 2
+      ;;
   esac
   
-  status=$?
+  local status=$?
   
-  if [ "$status" = "2" ]
+  if [ $status -eq 2 ]
   then
     echo "Set command usage:"
     echo "    $SET_USAGE"
-    return 2
   fi
+  
+  return $status
 }
 
 ARGS=($@)
@@ -335,7 +355,7 @@ INDEX_OFFSET=-1
 #
 # parse options
 #
-for i in $(seq 0 $((${#ARGS[@]} - 1)))
+for ((i=0; i<${#ARGS[@]}; i++))
 do
   case ${ARGS[$i]} in
     -c|--config)
@@ -363,18 +383,20 @@ done
 #
 for param in $(${DEFAULT_LIB_PATH}/parse_parameters.sh $SPI_DEV $CONFIG_FILE)
 do
-  eval config_${param}
+  case $param in
+  eeprom*)
+    EEPROM_DEV=/sys/bus/i2c/devices/1-00$(echo $param | cut -d= -f2 | sed -e 's/^0x//')
+    ;;
+  gpio*)
+    GPIO_DEV=/sys/bus/i2c/devices/1-00$(echo $param | cut -d= -f2 | sed -e 's/^0x//')
+    ;;
+  channels*)
+    CHANNELS=$(echo $param | cut -d= -f2)
+    ;;
+  *)
+    ;;
+  esac
 done
-
-if [ -n "$config_gpio" ]
-then
-  GPIO_DEV=/sys/bus/i2c/devices/1-00$(echo $config_gpio | sed -e 's/^0x//')
-fi
-if [ -n "$config_eeprom" ]
-then
-  EEPROM_DEV=/sys/bus/i2c/devices/1-00$(echo $config_eeprom | sed -e 's/^0x//')
-fi
-CHANNELS=$config_channels
 
 IIO_DEV=$(find $IIO_PATH -maxdepth 0)
 FREQ_PATH=${IIO_DEV}/sampling_frequency
@@ -383,16 +405,18 @@ SCALE_PATH=${IIO_DEV}/in_voltage-voltage_scale
 #
 # execute funcion
 #
-for i in $(seq 0 $((${#ARGS[@]} - 1)))
+for ((i=0; i<${#ARGS[@]}; i++))
 do
   case ${ARGS[$i]} in
     get)
       adpi_get ${ARGS[@]:$(($i + 1))}
-      exit $?
+      status=$?
+      break
       ;;
     set)
       adpi_set ${ARGS[@]:$(($i + 1))}
-      exit $?
+      status=$?
+      break
       ;;
     help)
       echo "$USAGE"
@@ -407,6 +431,14 @@ do
   esac
 done
 
-echo "$USAGE"
-exit 2
+if [ -z $status ]
+then
+  echo "$USAGE"
+  exit 2
+elif [ $status -ne 0 ]
+then
+  echo "Command failure"
+fi
+
+exit $status
 
