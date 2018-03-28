@@ -5,5 +5,5 @@
 
 
 %:
-	dh $@
+	dh $@ --with bash-completion
 

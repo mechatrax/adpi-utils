@@ -1,0 +1,156 @@
+_adpictl_gen_cmds()
+{
+	local cmds=(
+		'get'
+		'set'
+		'help'
+		'version'
+	)
+	local c
+
+	for ((i=0; i<$cword; i++)); do
+		for c in "${cmds[@]}"; do
+			if [ "$c" = "${words[$i]}" ]; then
+				return
+			fi
+		done
+	done
+
+	echo "${cmds[@]}"
+}
+
+_adpictl_gen_opts()
+{
+	local opts=(
+		'--config'
+		'--iio'
+		'--spi'
+	)
+
+	for ((i=0; i<$cword; i++)); do
+		case ${words[$i]} in
+		-c|--config)
+			opts[0]=""
+			;;
+		-i|--iio|-s|--spi)
+			opts[1]=""
+			opts[2]=""
+			;;
+		esac
+	done
+
+	echo "${opts[@]}"
+}
+
+_adpictl_comp_prms()
+{
+	local cmd
+
+	if [ $cword -gt 2 ]; then
+		cmd=${words[$(($cword - 2))]}
+	fi
+
+	case $prev in
+	frequency)
+		if [ "$cmd" = "set" ]; then
+			COMPREPLY=( $(compgen -W '470 242 123 62 50 39 33 19 17 16 12 10 8 6 4' -- $cur) )
+		fi
+		;;
+	gain)
+		if [ "$cmd" = "set" ]; then
+			COMPREPLY=( $(compgen -W '1 2 4 8 16 32 64 128' -- $cur) )
+		fi
+		;;
+	output)
+		COMPREPLY=( $(compgen -W '1 2 3 4' -- $cur) )
+		;;
+	scale)
+		if [ "$cmd" = "set" ]; then
+			COMPREPLY=( $(compgen -W '0.000596040 0.000298020 0.000149010 0.000074500 0.000037250 0.000018620 0.000009310 0.000004650' -- $cur) )
+		fi
+		;;
+	voltage)
+		COMPREPLY=( $(compgen -W '1 2 3 4' -- $cur) )
+		;;
+	esac
+}
+
+_adpictl_comp_cmds()
+{
+	case $prev in
+	help|version)
+		;;
+	get)
+		COMPREPLY=( $(compgen -W 'frequency gain output scale voltage' -- $cur) )
+		;;
+	set)
+		COMPREPLY=( $(compgen -W 'frequency gain output scale' -- $cur) )
+		;;
+	esac
+}
+
+_adpictl_comp_opts()
+{
+	local num
+
+	case $prev in
+	-c|--config)
+		_filedir
+		;;
+	-i|--iio)
+		num=$(ls /sys/bus/iio | grep "^iio\:device" | wc -l)
+		COMPREPLY=( $(compgen -W "$(seq 0 $num)" -- $cur) )
+		;;
+	-s|--spi)
+		num=$(ls /sys/bus/spi | grep "^spi0\." | wc -l)
+		COMPREPLY=( $(compgen -W "$(seq 0 $num)" -- $cur) )
+		;;
+	esac
+}
+
+_adpictl()
+{
+	local cur prev words cword
+	_init_completion || return
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $(compgen -W "$(_adpictl_gen_opts)" -- $cur) )
+	else
+		case $prev in
+		-*)
+			_adpictl_comp_opts
+			;;
+		get|set|help|version)
+			_adpictl_comp_cmds
+			;;
+		frequency|gain|output|scale|voltage)
+			_adpictl_comp_prms
+			;;
+		*)
+			local prepre
+
+			if [ $cword -gt 2 ]; then
+				prepre=${words[$(($cword - 2))]}
+			fi
+
+			case $prepre in
+			output)
+				local cmd
+				if [ $cword -gt 3 ]; then
+					cmd=${words[$(($cword - 3))]}
+				fi
+				if [ "$cmd" = "set" ]; then
+					COMPREPLY=( $(compgen -W 'on off' -- $cur) )
+				fi
+				;;
+			*)
+				COMPREPLY=( $(compgen -W "$(_adpictl_gen_cmds)" -- $cur) )
+				;;
+			esac
+			;;
+		esac
+	fi
+} &&
+
+complete -F _adpictl adpictl
+

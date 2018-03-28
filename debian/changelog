@@ -1,3 +1,9 @@
+adpi-utils (1.1.0) unstable; urgency=medium
+
+  * Add bash-completion
+
+ -- Masahiro Honda <honda@mechatrax.com>  Mon, 26 Mar 2018 14:47:54 +0900
+
 adpi-utils (1.0.0) unstable; urgency=medium
 
   * Initial Release.

@@ -1,8 +1,0 @@
-1c3eeecc239c553b478dac41dace963e  lib/udev/rules.d/99-adpi-gpio.rules
-94efef7b306f17fe1fa28ec6e8e3aac8  lib/udev/rules.d/99-adpi-iio.rules
-3f0d158e3ae9da1fdaf3802f43cee32b  usr/lib/adpi-utils/export_gpio.sh
-d5aa95652297cab0545fb3f17d02ccc8  usr/lib/adpi-utils/parse_parameters.sh
-d7b953603af353223f1b88a266975f13  usr/lib/adpi-utils/parse_sections.sh
-fceb6ac216eef8c2938d9fed69333faa  usr/sbin/adpictl
-09a5a650ec3bd91bc82a731007a6f6ca  usr/share/doc/adpi-utils/changelog.gz
-3286be14e45f961b2eca2dd96192ddb5  usr/share/doc/adpi-utils/copyright

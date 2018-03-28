@@ -1,1 +1,0 @@
-ACTION=="add", SUBSYSTEM=="iio", ATTRS{name}=="ad7794", RUN+="/usr/sbin/adpictl --iio %m set gain 1"
