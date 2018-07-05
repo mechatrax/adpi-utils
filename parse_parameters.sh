@@ -11,7 +11,7 @@ CONF_FILE=$2
 
 params=$(awk -v target=$SECTION -F= \
   '/^\[/{ sect=$1; gsub("[][]", "", sect) } sect==target && \
-  $2!="" && $1 ~ /^[^#;]/{ print $1"="$2 }' \
+  $1!="["sect"]" && $1 ~ /^[^#;]/{ print $1"="$2 }' \
   $CONF_FILE)
 
 for p in $params

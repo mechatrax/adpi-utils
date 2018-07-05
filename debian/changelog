@@ -1,3 +1,10 @@
+adpi-utils (2.0.0) unstable; urgency=medium
+
+  * Change adpictl to use adpi-utils-backend
+  * Add option to read temperature to adpictl
+
+ -- Masahiro Honda <honda@mechatrax.com>  Thu, 05 Jul 2018 11:22:37 +0900
+
 adpi-utils (1.1.0) unstable; urgency=medium
 
   * Add bash-completion
