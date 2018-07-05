@@ -10,6 +10,6 @@ Vcs-browser: https://github.com/mechatrax/adpi-utils
 
 Package: adpi-utils
 Architecture: all
-Depends: ${misc:Depends}, bc, adpi-firmware, raspberrypi-kernel-mtx
+Depends: ${misc:Depends}, adpi-utils-backend-spidev | adpi-utils-backend
 Description: Utilities for ADPi
  This package contains command utilities to control ADPi.

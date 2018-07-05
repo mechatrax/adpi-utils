@@ -81,7 +81,7 @@ _adpictl_comp_cmds()
 	help|version)
 		;;
 	get)
-		COMPREPLY=( $(compgen -W 'frequency gain output scale voltage' -- $cur) )
+		COMPREPLY=( $(compgen -W 'frequency gain output scale temperature voltage' -- $cur) )
 		;;
 	set)
 		COMPREPLY=( $(compgen -W 'frequency gain output scale' -- $cur) )
@@ -98,12 +98,12 @@ _adpictl_comp_opts()
 		_filedir
 		;;
 	-i|--iio)
-		num=$(ls /sys/bus/iio | grep "^iio\:device" | wc -l)
-		COMPREPLY=( $(compgen -W "$(seq 0 $num)" -- $cur) )
+		num=$(ls /sys/bus/iio/devices | grep "^iio\:device" | wc -l)
+		COMPREPLY=( $(compgen -W "$(seq 0 $(($num - 1)))" -- $cur) )
 		;;
 	-s|--spi)
-		num=$(ls /sys/bus/spi | grep "^spi0\." | wc -l)
-		COMPREPLY=( $(compgen -W "$(seq 0 $num)" -- $cur) )
+		num=$(ls /sys/bus/spi/devices | grep "^spi0\." | wc -l)
+		COMPREPLY=( $(compgen -W "$(seq 0 $(($num - 1)))" -- $cur) )
 		;;
 	esac
 }
