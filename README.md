@@ -44,7 +44,7 @@ ADPi を操作するためのツール類を提供します。
     指定した PARAMETER に値を設定します。  
     PARAMETER には次のいずれかを指定します。  
 
-    - freqency \<VALUE\>
+    - freqency \<VALUE\>  
       サンプリング周波数を設定します。  
       単位は Hz です。  
 
@@ -55,7 +55,7 @@ ADPi を操作するためのツール類を提供します。
     - output \<CH\> {on|off}  
       接続先 CH の電源端子の出力状態を設定します。  
 
-    - scale  
+    - scale \<VALUE\>  
       電圧レンジを設定します。  
       分解能を指定します。  
       単位は mV です。  
