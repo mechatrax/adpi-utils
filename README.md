@@ -4,15 +4,15 @@ adpi-utils
 ADPi を操作するためのツール類を提供します。
 
 ## 提供ファイル
-動作に必要な次のファイルがパッケージに含まれています。
+次のファイルがパッケージに含まれています。
 
-* /usr/sbin/adpictl  
+### /usr/sbin/adpictl  
   ADPi を操作するための実行ファイルです。  
-  コマンドラインの構文を次に示します。  
+  コマンドラインの構文を次に示します。
 
   adpictl [OPTION] COMMAND ...
 
-  COMMAND に指定可能な引数の書式を次に示します。  
+  COMMAND に指定可能な引数の書式を次に示します。
 
   + get PARAMETER  
     指定した PARAMETER の値を取得します。  
@@ -83,10 +83,10 @@ ADPi を操作するためのツール類を提供します。
     DEVICE_NUMBER には認識された iio:device の番号を指定します。  
     デフォルトは 0 です。  
 
-* /etc/adpi.conf  
-  ADPi の設定を記述するファイルです。  
+### /etc/adpi.conf  
+  ADPi の設定を記述するファイルです。
 
-  記述可能なセクションを次に示します。  
+  記述可能なセクションを次に示します。
 
   + [spi0.0]  
     SPI0 の CS0 に接続されたデバイスの設定を記述します。  
@@ -112,8 +112,17 @@ ADPi を操作するためのツール類を提供します。
     電源端子の出力に使用する GPIO エキスパンダのアドレスを指定します。  
     アドレスは 16 進数で指定します。  
 
-* /usr/lib/adpi-utils/parse_parameters.sh  
-  設定ファイルのパラメータを取得して表示するスクリプトファイルです。  
+### /usr/lib/adpi-utils/parse_parameters.sh  
+  設定ファイルのパラメータを取得して表示するスクリプトファイルです。
 
-* /usr/lib/adpi-utils/parse_sections.sh  
-  設定ファイルのセクションを取得して表示するスクリプトファイルです。  
+### /usr/lib/adpi-utils/parse_sections.sh  
+  設定ファイルのセクションを取得して表示するスクリプトファイルです。
+
+### /usr/share/bash-completion/completions/adpictl
+  adpictl のコマンド補完を行うための設定ファイルです。
+
+### /usr/share/doc/adpi-utils/changelog.gz
+  パッケージの変更履歴を記録したファイルです。
+
+### /usr/share/doc/adpi-utils/copyright
+  著作権とライセンスを記載したファイルです。
