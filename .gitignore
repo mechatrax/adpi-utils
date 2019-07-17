@@ -3,4 +3,5 @@ debian/files
 debian/*.log
 debian/*.substvars
 
+debian/.debhelper/*
 debian/adpi-utils/*
