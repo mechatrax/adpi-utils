@@ -1,3 +1,12 @@
+adpi-utils (2.0.2) bullseye; urgency=medium
+
+  * debian/compat: Deleted
+  * debian/control
+    - Change Build-Depends to debhelper-compat from debhelper
+    - Bump Standards-Version to 4.5.1
+
+ -- Yuta Kiyonaga <kiyonaga@mechatrax.com>  Tue, 20 Jul 2021 08:09:12 +0000
+
 adpi-utils (2.0.1) buster; urgency=medium
 
   * debian/control: Fix Build-Depends
