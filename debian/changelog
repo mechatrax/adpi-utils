@@ -1,3 +1,10 @@
+adpi-utils (2.0.4) bookworm; urgency=medium
+
+  * adpictl: Modify search path
+  * debian/copyright: Update contact information
+
+ -- Yuta Kiyonaga <kiyonaga@mechatrax.com>  Fri, 08 Dec 2023 11:11:15 +0900
+
 adpi-utils (2.0.3.1) bookworm; urgency=medium
 
   * debian/control: Bump Standards-Version to 4.6.2
