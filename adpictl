@@ -72,9 +72,7 @@ do
       IIO_NAME=iio:device${ARGS[$(($i + 1))]}
       IIO_SEARCH_PATH=/sys/bus/iio/devices/${IIO_NAME}
       SPI_NAME=$(find /sys/bus/spi/devices/spi*/ -name "$IIO_NAME" | \
-                awk -F / '{ for (i=1;i<=NF;i++) { \
-                  if (match($i,"spi[0-9]*\.[0-9]*")) \
-                    print $i }}')
+                grep -o -E "spi[0-9]+\.[0-9]+")
       ;;
     *)
       ;;
