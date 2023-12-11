@@ -1,9 +1,10 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: adpi-utils
+Upstream-Contact: https://github.com/mechatrax/adpi-utils/issues
 Source: https://github.com/mechatrax/adpi-utils
 
 Files: *
-Copyright: 2017 MechaTracks Co., Ltd. <info@mechatrax.com>
+Copyright: 2017 MechaTracks Co., Ltd.
 License: MIT
 
 License: MIT
