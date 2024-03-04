@@ -1,3 +1,9 @@
+adpi-utils (2.0.5) bookworm; urgency=medium
+
+  * adpictl: Modify search spidev path
+
+ -- Yuta Kiyonaga <kiyonaga@mechatrax.com>  Mon, 04 Mar 2024 15:41:10 +0900
+
 adpi-utils (2.0.4) bookworm; urgency=medium
 
   * adpictl: Modify search path
