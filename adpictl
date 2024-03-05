@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DEFAULT_DEVICE_NAME=adpipro
-DEFAULT_SPI_NAME=spi0.0
+DEFAULT_IIO_NAME=iio:device0
 DEFAULT_CONFIG_FILE=/etc/adpi.conf
 
 LIB_PATH=/usr/lib/adpi-utils/
@@ -30,9 +30,9 @@ Options:
 ARGS=($@)
 
 DEVICE_NAME=$DEFAULT_DEVICE_NAME
-SPI_NAME=$DEFAULT_SPI_NAME
+SPI_NAME=
+IIO_NAME=$DEFAULT_IIO_NAME
 CONFIG_FILE=$DEFAULT_CONFIG_FILE
-IIO_SEARCH_PATH="/sys/bus/spi/devices/${SPI_NAME}/iio:device*"
 INDEX_OFFSET=-1
 
 #
@@ -56,6 +56,23 @@ show_help ()
 }
 
 #
+# Usage: search_spidev <config file>
+#
+search_spidev ()
+{
+  for spidev in $(sed -nr 's/^\[(spi*.*)\].*/\1/p' $1)
+  do
+    for param in $(${LIB_PATH}/parse_parameters.sh $spidev $1)
+    do
+      if [[ "$param" =~ device=(.+) ]]
+      then
+        echo $spidev
+      fi
+    done
+  done
+}
+
+#
 # parse options
 #
 for ((i=0; i<${#ARGS[@]}; i++))
@@ -66,18 +83,19 @@ do
       ;;
     -s|--spi)
       SPI_NAME=spi0.${ARGS[$(($i + 1))]}
-      IIO_SEARCH_PATH=/sys/bus/spi/devices/${SPI_NAME}/iio:device*
       ;;
     -i|--iio)
       IIO_NAME=iio:device${ARGS[$(($i + 1))]}
-      IIO_SEARCH_PATH=/sys/bus/iio/devices/${IIO_NAME}
-      SPI_NAME=$(find /sys/bus/spi/devices/spi*/ -name "$IIO_NAME" | \
-                grep -o -E "spi[0-9]+\.[0-9]+")
       ;;
     *)
       ;;
   esac
 done
+
+if [ "$SPI_NAME" == "" ]
+then
+  SPI_NAME=$(search_spidev $CONFIG_FILE)
+fi
 
 #
 # parse config
