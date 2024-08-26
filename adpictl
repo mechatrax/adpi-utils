@@ -67,6 +67,7 @@ search_spidev ()
       if [[ "$param" =~ device=(.+) ]]
       then
         echo $spidev
+        return
       fi
     done
   done
@@ -86,6 +87,12 @@ do
       ;;
     -i|--iio)
       IIO_NAME=iio:device${ARGS[$(($i + 1))]}
+      SPI_NAME=$(find /sys/bus/spi/devices/spi*/ -name "$IIO_NAME" | \
+        grep -o -E "spi[0-9]+\.[0-9]+")
+      if [ "$SPI_NAME" == "" ]
+      then
+        exit 1
+      fi
       ;;
     *)
       ;;

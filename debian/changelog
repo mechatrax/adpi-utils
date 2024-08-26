@@ -1,3 +1,10 @@
+adpi-utils (2.0.6) bookworm; urgency=medium
+
+  * adpictl: Fix search spidev path when -i,--iio option is specified
+  * adpictl: Fix return single spidev name 
+
+ -- Yuta Kiyonaga <kiyonaga@mechatrax.com>  Mon, 26 Aug 2024 11:27:24 +0900
+
 adpi-utils (2.0.5) bookworm; urgency=medium
 
   * adpictl: Modify search spidev path
