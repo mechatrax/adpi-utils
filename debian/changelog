@@ -1,3 +1,12 @@
+adpi-utils (2.0.6.1) trixie; urgency=medium
+
+  * Update for trixie
+  * debian/control
+    - Bump Standards-Version to 4.7.2
+    - Bump debhelper-compat to 13
+
+ -- Yuta Kiyonaga <kiyonaga@mechatrax.com>  Wed, 05 Nov 2025 17:22:50 +0900
+
 adpi-utils (2.0.6) bookworm; urgency=medium
 
   * adpictl: Fix search spidev path when -i,--iio option is specified
